@@ -23,15 +23,32 @@ model User {
   updatedAt     DateTime     @updatedAt
 }
 
+enum AttendanceStatus {
+  PRESENT
+  LEAVE
+  FIELD_WORK
+}
+
 model Attendance {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  date      DateTime  @default(now()) @db.Date
-  clockIn   DateTime  @default(now())
-  clockOut  DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id])
+  date          DateTime         @default(now()) @db.Date
+  status        AttendanceStatus @default(PRESENT)
+  
+  // Clock in (QR)
+  clockIn       DateTime?        @default(now())
+  
+  // Clock out (Selfie)
+  clockOut      DateTime?
+  checkOutPhoto String?          @db.Text // Base64 selfie
+  
+  // Izin / Lapangan
+  reason        String?
+  proofPhoto    String?          @db.Text // Base64 bukti
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@unique([userId, date])
 }
