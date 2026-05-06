@@ -11,6 +11,7 @@ import { id } from "date-fns/locale";
 export default function Home() {
   const { data: session, status } = useSession();
   const [activeView, setActiveView] = useState<"HOME" | "SCAN" | "SELFIE" | "IZIN">("HOME");
+  const [isCapturingIzin, setIsCapturingIzin] = useState(false);
   const [izinType, setIzinType] = useState<"LEAVE" | "FIELD_WORK">("LEAVE");
   const [reason, setReason] = useState("");
   const [result, setResult] = useState<{ message: string; type: string } | null>(null);
@@ -96,7 +97,9 @@ export default function Home() {
       if (res.ok) {
         setResult({ message: data.message, type: "SUCCESS" });
         fetchAttendance();
+        setIsCapturingIzin(false);
         setActiveView("HOME");
+        setReason("");
       } else {
         setResult({ message: data.message, type: "ERROR" });
       }
@@ -220,11 +223,15 @@ export default function Home() {
                <Camera onCapture={handleSelfieCapture} onCancel={() => setActiveView("HOME")} />
             )}
 
-            {activeView === "IZIN" && (
+            {isCapturingIzin && (
+               <Camera onCapture={handleIzinSubmit} onCancel={() => setIsCapturingIzin(false)} />
+            )}
+
+            {activeView === "IZIN" && !isCapturingIzin && (
               <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-white space-y-6">
                  <h2 className="text-xl font-black text-slate-900">{izinType === "LEAVE" ? "Izin / Sakit" : "Dinas Lapangan"}</h2>
                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Keterangan / Alasan</label>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Keterangan / Alasan</label>
                     <textarea 
                       className="w-full mt-2 p-4 bg-slate-50 rounded-2xl border-0 ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-600 outline-none font-bold text-slate-700"
                       placeholder="Tulis alasan singkat..."
@@ -237,22 +244,20 @@ export default function Home() {
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto text-indigo-600 shadow-sm">
                       <CameraIcon size={32} />
                     </div>
-                    <p className="text-xs font-bold text-indigo-600">Ambil Foto Bukti (Selfie / Surat)</p>
+                    <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Ambil Foto Bukti</p>
                     <button onClick={() => {
                       if (!reason) return alert("Isi alasan dulu bro");
-                      // This will trigger Camera component
-                      setActiveView("SELFIE");
-                    }} className="w-full bg-white py-3 rounded-xl text-sm font-black text-indigo-600 shadow-sm">Buka Kamera</button>
+                      setIsCapturingIzin(true);
+                    }} className="w-full bg-white py-4 rounded-xl text-sm font-black text-indigo-600 shadow-sm active:scale-95 transition-all">Buka Kamera</button>
                  </div>
-                 {/* Logic change: Reuse Camera for Izin photo */}
-                 <button onClick={() => setActiveView("HOME")} className="w-full py-2 text-slate-400 text-sm font-bold">Batal</button>
+                 <button onClick={() => setActiveView("HOME")} className="w-full py-2 text-slate-400 text-sm font-bold uppercase tracking-widest">Batal</button>
               </div>
             )}
 
             {result && (
               <div className={`p-8 rounded-[2rem] text-center shadow-2xl ${result.type === "ERROR" ? "bg-red-50 border-2 border-red-100" : "bg-indigo-50 border-2 border-indigo-100"}`}>
-                <p className="font-black text-slate-900 mb-4">{result.message}</p>
-                <button onClick={() => { setResult(null); setActiveView("HOME"); }} className="bg-white px-8 py-2 rounded-xl text-sm font-bold shadow-sm">Tutup</button>
+                <p className="font-black text-slate-900 mb-4 tracking-tight leading-relaxed">{result.message}</p>
+                <button onClick={() => { setResult(null); setActiveView("HOME"); }} className="bg-white px-10 py-3 rounded-xl text-sm font-black shadow-sm uppercase tracking-widest">Tutup</button>
               </div>
             )}
           </div>
