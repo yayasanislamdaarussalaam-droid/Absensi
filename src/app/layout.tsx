@@ -18,12 +18,17 @@ export const metadata: Metadata = {
   title: "Absensi QR",
   description: "Sistem Absensi Kantor QR Code",
   manifest: "/manifest.json",
-  themeColor: "#4F46E5",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
   }
+};
+
+export const viewport = {
+  themeColor: "#4F46E5",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
