@@ -1,14 +1,16 @@
-const CACHE_NAME = "absensi-v2";
+const CACHE_NAME = "absensi-v3";
 const ASSETS = [
   "/",
   "/manifest.json",
-  "/icon.png",
-  "/offline", // Jika ada halaman offline
+  "/icon.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("PWA: Caching critical assets");
+      return cache.addAll(ASSETS);
+    })
   );
   self.skipWaiting();
 });
