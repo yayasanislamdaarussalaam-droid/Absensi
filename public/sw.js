@@ -1,4 +1,11 @@
+const CACHE_NAME = "absensi-v1";
+
 self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(["/", "/manifest.json", "/icon.svg"]);
+    })
+  );
   self.skipWaiting();
 });
 
@@ -7,6 +14,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Basic fetch handler needed for PWA install criteria
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
 });
