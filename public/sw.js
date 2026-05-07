@@ -8,7 +8,7 @@ self.addEventListener("install", (event) => {
         "/",
         OFFLINE_URL,
         "/manifest.json",
-        "/icon.svg",
+        "/logo.png",
         "/login",
         "/register"
       ]);
