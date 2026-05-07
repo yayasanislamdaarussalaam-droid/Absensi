@@ -24,8 +24,8 @@ export const metadata: Metadata = {
     title: "Absensi QR",
   },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/icon.png",
+    apple: "/icon.png",
   }
 };
 
