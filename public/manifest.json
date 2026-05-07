@@ -1,21 +1,32 @@
 {
-  "name": "Absensi QR",
-  "short_name": "Absensi",
-  "description": "Sistem Absensi Digital",
+  "name": "Absensi QR - Yayasan Daarussalaam",
+  "short_name": "Absensi QR",
+  "description": "Sistem Absensi Digital QR Code Yayasan Daarussalaam",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#F8FAFC",
   "theme_color": "#4F46E5",
   "icons": [
     {
       "src": "/icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan QR",
+      "url": "/?view=SCAN",
+      "icons": [{ "src": "/icon.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["productivity", "utilities"]
 }
