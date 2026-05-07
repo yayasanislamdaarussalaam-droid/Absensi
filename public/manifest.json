@@ -3,6 +3,7 @@
   "short_name": "Absensi QR",
   "description": "Sistem Absensi Digital QR Code Yayasan Daarussalaam",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F8FAFC",
