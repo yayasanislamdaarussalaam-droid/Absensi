@@ -1,16 +1,22 @@
 {
   "name": "Absensi QR Kantor",
   "short_name": "AbsensiQR",
-  "description": "Sistem Absensi Digital QR Code & Selfie dengan Verifikasi Lokasi",
+  "description": "Sistem Absensi Digital QR Code & Selfie",
+  "id": "absensi-qr-pwa",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F8FAFC",
   "theme_color": "#4F46E5",
-  "categories": ["business", "productivity"],
+  "lang": "id",
+  "dir": "ltr",
+  "orientation": "portrait",
+  "prefer_related_applications": false,
+  "categories": ["business", "productivity", "utilities"],
   "icons": [
     {
       "src": "/icon.svg",
-      "sizes": "192x192",
+      "sizes": "48x48 72x72 96x96 128x128 144x144 192x192 256x256 384x384 512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
@@ -26,22 +32,13 @@
       "src": "/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "form_factor": "narrow",
-      "label": "Tampilan Utama Absensi"
+      "form_factor": "narrow"
     },
     {
       "src": "/icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "form_factor": "wide",
-      "label": "Tampilan Desktop Absensi"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Scan QR Masuk",
-      "url": "/?action=scan",
-      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+      "form_factor": "wide"
     }
   ]
 }

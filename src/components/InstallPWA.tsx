@@ -70,7 +70,7 @@ export const InstallPWA = () => {
           className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
         >
           <Download size={14} />
-          Pasang Aplikasi
+          Download & Install
         </button>
         <div className="w-[1px] h-4 bg-white/20 mx-1" />
         <button 
