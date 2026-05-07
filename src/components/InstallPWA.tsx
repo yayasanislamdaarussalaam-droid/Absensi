@@ -40,13 +40,21 @@ export const InstallPWA = () => {
   }, []);
 
   const handleInstallClick = async () => {
+    console.log("Install button clicked, prompt status:", !!deferredPrompt);
+    
     if (deferredPrompt) {
+      // Ini adalah cara paling 'langsung' yang dibolehin browser
       deferredPrompt.prompt();
+      
       const { outcome } = await deferredPrompt.userChoice;
+      console.log("Install outcome:", outcome);
+      
       if (outcome === "accepted") {
         setDeferredPrompt(null);
       }
     } else {
+      // Kalau deferredPrompt belum siap, berarti browser belum kasih ijin instal otomatis
+      console.warn("Browser hasn't triggered install prompt yet.");
       setShowManual(true);
     }
   };
