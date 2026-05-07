@@ -67,10 +67,10 @@ export const InstallPWA = () => {
       <div className="flex items-center gap-2 bg-indigo-600 text-white pl-4 pr-2 py-2.5 rounded-full shadow-2xl shadow-indigo-300 animate-bounce-slow">
         <button
           onClick={handleInstallClick}
-          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
         >
-          <Download size={14} />
-          Download & Install
+          <Download size={16} />
+          INSTALL SEKARANG
         </button>
         <div className="w-[1px] h-4 bg-white/20 mx-1" />
         <button 
