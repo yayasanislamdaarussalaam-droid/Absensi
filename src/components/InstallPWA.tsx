@@ -40,22 +40,17 @@ export const InstallPWA = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    console.log("Install button clicked, prompt status:", !!deferredPrompt);
-    
     if (deferredPrompt) {
-      // Ini adalah cara paling 'langsung' yang dibolehin browser
       deferredPrompt.prompt();
-      
       const { outcome } = await deferredPrompt.userChoice;
-      console.log("Install outcome:", outcome);
-      
       if (outcome === "accepted") {
         setDeferredPrompt(null);
       }
     } else {
-      // Kalau deferredPrompt belum siap, berarti browser belum kasih ijin instal otomatis
-      console.warn("Browser hasn't triggered install prompt yet.");
+      // Jika otomatis gagal, kita arahkan ke panduan
       setShowManual(true);
+      // Log untuk debug di console HP (bisa dicek lewat remote debug)
+      console.log("PWA: Manual mode triggered. Reason: No deferredPrompt. Check Manifest/Icons.");
     }
   };
 
@@ -63,21 +58,21 @@ export const InstallPWA = () => {
 
   return (
     <>
-      {/* Floating Install Button */}
-      <div className="flex items-center gap-2 bg-indigo-600 text-white pl-4 pr-2 py-2.5 rounded-full shadow-2xl shadow-indigo-300 animate-bounce-slow">
+      {/* Floating Install Button - Dibuat lebih besar dan mencolok */}
+      <div className="flex items-center gap-2 bg-indigo-600 text-white pl-5 pr-3 py-3 rounded-2xl shadow-[0_20px_50px_rgba(79,70,229,0.3)] animate-bounce-slow border-2 border-white/20">
         <button
           onClick={handleInstallClick}
-          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
+          className="flex items-center gap-3 text-sm font-black uppercase tracking-tighter active:scale-90 transition-all"
         >
-          <Download size={16} />
-          INSTALL SEKARANG
+          <Download size={20} strokeWidth={3} />
+          DOWNLOAD APLIKASI
         </button>
-        <div className="w-[1px] h-4 bg-white/20 mx-1" />
+        <div className="w-[1px] h-6 bg-white/20 mx-1" />
         <button 
           onClick={() => setIsDismissed(true)}
           className="p-1 hover:bg-white/10 rounded-full transition-all"
         >
-          <X size={14} />
+          <X size={18} />
         </button>
       </div>
 
