@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   title: "Absensi QR",
   description: "Sistem Absensi Kantor QR Code",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Absensi QR",
+  },
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
