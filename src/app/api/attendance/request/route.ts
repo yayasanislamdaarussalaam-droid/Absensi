@@ -11,9 +11,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { type, reason, photo } = await req.json();
+    const { type, reason, photo, clientTime } = await req.json();
+    const today = clientTime ? new Date(clientTime) : new Date();
     const userId = (session.user as any).id;
-    const today = new Date();
 
     const existing = await prisma.attendance.findUnique({
       where: {

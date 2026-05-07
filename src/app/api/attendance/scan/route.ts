@@ -12,7 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { qrData } = await req.json();
+    const { qrData, clientTime } = await req.json();
+    const today = clientTime ? new Date(clientTime) : new Date();
 
     // Verify QR code secret
     const config = await prisma.officeConfig.findUnique({
@@ -24,7 +25,6 @@ export async function POST(req: Request) {
     }
 
     const userId = (session.user as any).id;
-    const today = new Date();
     
     // Find attendance for today
     const attendance = await prisma.attendance.findUnique({

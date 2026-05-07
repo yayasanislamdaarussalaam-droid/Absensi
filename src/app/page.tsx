@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Scanner } from "@/components/Scanner";
 import { Camera } from "@/components/Camera";
-import { LogOut, Clock, CheckCircle2, MapPin, ClipboardX, Camera as CameraIcon, Info } from "lucide-react";
+import { LogOut, Clock, CheckCircle2, MapPin, ClipboardX, Camera as CameraIcon, Info, WifiOff, CloudUpload } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -17,10 +17,58 @@ export default function Home() {
   const [result, setResult] = useState<{ message: string; type: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [attendanceToday, setAttendanceToday] = useState<any>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [pendingSync, setPendingSync] = useState(false);
 
   useEffect(() => {
     if (session) fetchAttendance();
+    
+    // Connectivity listeners
+    const handleOnline = () => { setIsOffline(false); syncPendingData(); };
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    setIsOffline(!navigator.onLine);
+    
+    checkPendingData();
+    
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, [session]);
+
+  const checkPendingData = () => {
+    const pending = localStorage.getItem("pending_attendance");
+    setPendingSync(!!pending);
+  };
+
+  const syncPendingData = async () => {
+    const pending = localStorage.getItem("pending_attendance");
+    if (!pending) return;
+
+    const { type, data } = JSON.parse(pending);
+    let endpoint = "";
+    if (type === "SCAN") endpoint = "/api/attendance/scan";
+    else if (type === "CHECKOUT") endpoint = "/api/attendance/checkout";
+    else if (type === "REQUEST") endpoint = "/api/attendance/request";
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        localStorage.removeItem("pending_attendance");
+        setPendingSync(false);
+        fetchAttendance();
+        setResult({ message: "Data offline berhasil disinkronkan!", type: "SUCCESS" });
+      }
+    } catch (err) {
+      console.error("Sync failed, will retry later");
+    }
+  };
 
   const fetchAttendance = async () => {
     try {
@@ -35,13 +83,21 @@ export default function Home() {
   };
 
   const handleScanSuccess = async (decodedText: string) => {
-    if (loading) return;
+    const payload = { qrData: decodedText, clientTime: new Date().toISOString() };
+    if (isOffline) {
+      localStorage.setItem("pending_attendance", JSON.stringify({ type: "SCAN", data: payload }));
+      setPendingSync(true);
+      setResult({ message: "Offline! Data absen disimpan di HP dan bakal dikirim pas ada sinyal.", type: "SUCCESS" });
+      setActiveView("HOME");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/attendance/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrData: decodedText }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -59,12 +115,21 @@ export default function Home() {
   };
 
   const handleSelfieCapture = async (base64: string) => {
+    const payload = { photo: base64, clientTime: new Date().toISOString() };
+    if (isOffline) {
+      localStorage.setItem("pending_attendance", JSON.stringify({ type: "CHECKOUT", data: payload }));
+      setPendingSync(true);
+      setResult({ message: "Offline! Selfie disimpan dan bakal dikirim otomatis nanti.", type: "SUCCESS" });
+      setActiveView("HOME");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/attendance/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photo: base64 }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -82,16 +147,23 @@ export default function Home() {
   };
 
   const handleIzinSubmit = async (base64: string) => {
-    if (!reason) {
-      alert("Alasan harus diisi");
+    const payload = { type: izinType, reason, photo: base64, clientTime: new Date().toISOString() };
+    if (isOffline) {
+      localStorage.setItem("pending_attendance", JSON.stringify({ type: "REQUEST", data: payload }));
+      setPendingSync(true);
+      setResult({ message: "Offline! Izin lu sudah dicatat di HP, nunggu sinyal buat setor.", type: "SUCCESS" });
+      setIsCapturingIzin(false);
+      setActiveView("HOME");
+      setReason("");
       return;
     }
+
     setLoading(true);
     try {
       const res = await fetch("/api/attendance/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: izinType, reason, photo: base64 }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok) {
@@ -121,13 +193,27 @@ export default function Home() {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
         <h1 className="text-2xl font-black text-indigo-600">Absensi<span className="text-slate-900">QR</span></h1>
-        <button onClick={() => signOut()} className="p-2.5 bg-slate-100 text-slate-500 rounded-full hover:bg-red-50 hover:text-red-600 transition-all">
-          <LogOut size={18} />
-        </button>
+        <div className="flex items-center gap-3">
+          {isOffline && <div className="flex items-center gap-1 text-orange-500 bg-orange-50 px-3 py-1 rounded-full text-[10px] font-black uppercase"><WifiOff size={12}/> Offline</div>}
+          <button onClick={() => signOut()} className="p-2.5 bg-slate-100 text-slate-500 rounded-full hover:bg-red-50 transition-all">
+            <LogOut size={18} />
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 p-6 flex flex-col items-center">
         <div className="w-full max-w-md space-y-6">
+          {/* Sync Status Alert */}
+          {pendingSync && !isOffline && (
+             <div className="bg-indigo-600 text-white p-4 rounded-2xl flex items-center justify-between shadow-lg animate-pulse">
+                <div className="flex items-center gap-3">
+                  <CloudUpload size={20} />
+                  <p className="text-xs font-bold">Ada data absen yang belum setor...</p>
+                </div>
+                <button onClick={syncPendingData} className="bg-white text-indigo-600 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase">Setor Sekarang</button>
+             </div>
+          )}
+
           {/* Welcome Card */}
           <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
             <div className="flex items-center gap-4">
@@ -135,8 +221,8 @@ export default function Home() {
                 {session?.user?.name?.substring(0, 1)}
               </div>
               <div>
-                <p className="text-xs font-black text-indigo-500 uppercase tracking-widest">Halo, Selamat Bekerja</p>
-                <p className="text-lg font-black text-slate-900 leading-tight">{session?.user?.name}</p>
+                <p className="text-xs font-black text-indigo-500 uppercase tracking-widest tracking-tight">Halo, {session?.user?.name}</p>
+                <p className="text-sm font-medium text-slate-500 italic">"Disiplin adalah kunci sukses"</p>
               </div>
             </div>
           </div>
@@ -145,7 +231,7 @@ export default function Home() {
           <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-white">
              <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-slate-800">Aktivitas Hari Ini</h2>
-                <span className="text-[10px] font-black bg-slate-100 px-3 py-1 rounded-full text-slate-500 uppercase">
+                <span className="text-[10px] font-black bg-slate-100 px-3 py-1 rounded-full text-slate-500 uppercase tracking-wider">
                   {format(new Date(), "EEEE, d MMM", { locale: id })}
                 </span>
              </div>
@@ -165,11 +251,11 @@ export default function Home() {
              ) : (
                <div className="grid grid-cols-2 gap-4">
                 <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                  <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Masuk Kantor</p>
+                  <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Masuk</p>
                   <p className="text-lg font-black text-slate-900">{attendanceToday?.clockIn ? format(new Date(attendanceToday.clockIn), "HH:mm") : "--:--"}</p>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                  <p className="text-[10px] text-orange-600 font-black uppercase mb-1">Pulang Kerja</p>
+                  <p className="text-[10px] text-orange-600 font-black uppercase mb-1">Pulang</p>
                   <p className="text-lg font-black text-slate-900">{attendanceToday?.clockOut ? format(new Date(attendanceToday.clockOut), "HH:mm") : "--:--"}</p>
                 </div>
                </div>
@@ -177,34 +263,33 @@ export default function Home() {
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-1 gap-4 pt-4">
+          <div className="grid grid-cols-1 gap-4 pt-2">
             {activeView === "HOME" && !result && (
               <>
                 {!attendanceToday && (
                   <>
-                    <button onClick={() => setActiveView("SCAN")} className="bg-indigo-600 text-white p-6 rounded-[1.5rem] font-black text-lg shadow-xl shadow-indigo-100 flex items-center justify-center gap-3">
+                    <button onClick={() => setActiveView("SCAN")} className="bg-indigo-600 text-white p-6 rounded-[1.5rem] font-black text-lg shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 active:scale-95 transition-all">
                       Scan QR Masuk
                     </button>
                     <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => { setIzinType("LEAVE"); setActiveView("IZIN"); }} className="bg-white text-slate-600 p-4 rounded-2xl font-bold border border-slate-200 flex flex-col items-center gap-2">
+                      <button onClick={() => { setIzinType("LEAVE"); setActiveView("IZIN"); }} className="bg-white text-slate-600 p-4 rounded-2xl font-bold border border-slate-200 flex flex-col items-center gap-2 active:bg-slate-50 transition-all">
                         <ClipboardX className="text-red-500" /> Izin / Sakit
                       </button>
-                      <button onClick={() => { setIzinType("FIELD_WORK"); setActiveView("IZIN"); }} className="bg-white text-slate-600 p-4 rounded-2xl font-bold border border-slate-200 flex flex-col items-center gap-2">
+                      <button onClick={() => { setIzinType("FIELD_WORK"); setActiveView("IZIN"); }} className="bg-white text-slate-600 p-4 rounded-2xl font-bold border border-slate-200 flex flex-col items-center gap-2 active:bg-slate-50 transition-all">
                         <MapPin className="text-indigo-500" /> Lapangan
                       </button>
                     </div>
                   </>
                 )}
                 {attendanceToday && !attendanceToday.clockOut && attendanceToday.status === "PRESENT" && (
-                  <button onClick={() => setActiveView("SELFIE")} className="bg-orange-500 text-white p-6 rounded-[1.5rem] font-black text-lg shadow-xl shadow-orange-100 flex items-center justify-center gap-3">
+                  <button onClick={() => setActiveView("SELFIE")} className="bg-orange-500 text-white p-6 rounded-[1.5rem] font-black text-lg shadow-xl shadow-orange-100 flex items-center justify-center gap-3 active:scale-95 transition-all">
                     Selfie Pulang Kerja
                   </button>
                 )}
                 {attendanceToday?.clockOut && (
-                  <div className="bg-white p-8 rounded-[2rem] text-center border border-slate-200">
+                  <div className="bg-white p-8 rounded-[2rem] text-center border border-slate-200 shadow-sm">
                     <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-3" />
-                    <p className="font-black text-slate-900">Absensi Selesai!</p>
-                    <p className="text-sm text-slate-500">Selamat beristirahat bro!</p>
+                    <p className="font-black text-slate-900 uppercase tracking-widest text-sm">Absensi Selesai!</p>
                   </div>
                 )}
               </>
@@ -212,10 +297,10 @@ export default function Home() {
 
             {activeView === "SCAN" && (
               <div className="space-y-4">
-                <div className="bg-white p-2 rounded-[2rem] shadow-xl border-4 border-indigo-100 overflow-hidden">
+                <div className="bg-white p-2 rounded-[2rem] shadow-xl border-4 border-indigo-100 overflow-hidden animate-in zoom-in duration-300">
                    <Scanner onScanSuccess={handleScanSuccess} />
                 </div>
-                <button onClick={() => setActiveView("HOME")} className="w-full py-4 text-slate-500 font-bold">Batal Scan</button>
+                <button onClick={() => setActiveView("HOME")} className="w-full py-4 text-slate-500 font-bold uppercase tracking-widest text-xs">Batal Scan</button>
               </div>
             )}
 
@@ -228,12 +313,12 @@ export default function Home() {
             )}
 
             {activeView === "IZIN" && !isCapturingIzin && (
-              <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-white space-y-6">
+              <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-white space-y-6 animate-in slide-in-from-bottom duration-300">
                  <h2 className="text-xl font-black text-slate-900">{izinType === "LEAVE" ? "Izin / Sakit" : "Dinas Lapangan"}</h2>
                  <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Keterangan / Alasan</label>
                     <textarea 
-                      className="w-full mt-2 p-4 bg-slate-50 rounded-2xl border-0 ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-600 outline-none font-bold text-slate-700"
+                      className="w-full mt-2 p-4 bg-slate-50 rounded-2xl border-0 ring-1 ring-slate-100 focus:ring-2 focus:ring-indigo-600 outline-none font-bold text-slate-700 transition-all"
                       placeholder="Tulis alasan singkat..."
                       rows={3}
                       value={reason}
@@ -255,9 +340,9 @@ export default function Home() {
             )}
 
             {result && (
-              <div className={`p-8 rounded-[2rem] text-center shadow-2xl ${result.type === "ERROR" ? "bg-red-50 border-2 border-red-100" : "bg-indigo-50 border-2 border-indigo-100"}`}>
+              <div className={`p-8 rounded-[2rem] text-center shadow-2xl animate-in zoom-in duration-500 ${result.type === "ERROR" ? "bg-red-50 border-2 border-red-100" : "bg-indigo-50 border-2 border-indigo-100"}`}>
                 <p className="font-black text-slate-900 mb-4 tracking-tight leading-relaxed">{result.message}</p>
-                <button onClick={() => { setResult(null); setActiveView("HOME"); }} className="bg-white px-10 py-3 rounded-xl text-sm font-black shadow-sm uppercase tracking-widest">Tutup</button>
+                <button onClick={() => { setResult(null); setActiveView("HOME"); }} className="bg-white px-10 py-3 rounded-xl text-sm font-black shadow-sm uppercase tracking-widest active:scale-95 transition-all">Tutup</button>
               </div>
             )}
           </div>
@@ -265,7 +350,7 @@ export default function Home() {
           {/* Admin Link */}
           {(session?.user as any)?.role === "ADMIN" && activeView === "HOME" && (
             <div className="pt-8 text-center">
-              <a href="/admin" className="inline-block bg-white border border-slate-200 px-8 py-3 rounded-full text-indigo-600 font-black text-xs hover:shadow-lg transition-all uppercase tracking-widest">Buka Panel Admin &rarr;</a>
+              <a href="/admin" className="inline-block bg-white border border-slate-200 px-8 py-3 rounded-full text-indigo-600 font-black text-xs hover:shadow-lg transition-all uppercase tracking-widest active:scale-95">Buka Panel Admin &rarr;</a>
             </div>
           )}
         </div>
