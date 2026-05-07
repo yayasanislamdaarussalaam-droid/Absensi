@@ -2,7 +2,8 @@ const CACHE_NAME = "absensi-v4";
 const ASSETS = [
   "/",
   "/manifest.json",
-  "/icon.png",
+  "/icon-192.png",
+  "/icon-512.png",
   "/globals.css",
   "/favicon.ico"
 ];

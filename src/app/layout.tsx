@@ -21,10 +21,11 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Absensi QR",
+    startupImage: "/icon-512.png",
   },
   icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
   }
 };
 
